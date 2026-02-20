@@ -1,11 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import json
 import numpy as np
 
 app = FastAPI()
 
-# CORS enabled
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,10 +12,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# EMBED DATA DIRECTLY - No file dependency
+# Embedded sample data (serverless compatible)
 TELEMETRY_DATA = [
     {"region": "emea", "latency_ms": 150, "uptime": 0.99},
-    {"region": "emea", "latency_ms": 200, "uptime": 0.98},
+    {"region": "emea", "latency_ms": 200, "uptime": 0.98}, 
     {"region": "emea", "latency_ms": 180, "uptime": 0.995},
     {"region": "emea", "latency_ms": 220, "uptime": 0.97},
     {"region": "emea", "latency_ms": 190, "uptime": 0.996},
@@ -44,21 +43,13 @@ async def analytics(request: Request):
         latencies = [r["latency_ms"] for r in region_data]
         uptimes = [r["uptime"] for r in region_data]
         
-        avg_latency = np.mean(latencies)
-        p95_latency = np.percentile(latencies, 95)
-        avg_uptime = np.mean(uptimes)
-        breaches = sum(1 for lat in latencies if lat > threshold_ms)
-        
         results[region] = {
-            "avg_latency": round(float(avg_latency), 2),
-            "p95_latency": round(float(p95_latency), 2),
-            "avg_uptime": round(float(avg_uptime), 4),
-            "breaches": int(breaches)
+            "avg_latency": round(np.mean(latencies), 2),
+            "p95_latency": round(np.percentile(latencies, 95), 2),
+            "avg_uptime": round(np.mean(uptimes), 4),
+            "breaches": sum(1 for lat in latencies if lat > threshold_ms)
         }
     
     return results
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("index:app", host="127.0.0.1", port=8000, reload=True)
 
